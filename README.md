@@ -103,6 +103,83 @@ Codex에서 비대화식으로 실행:
 codex --ask-for-approval never exec --sandbox danger-full-access "Run ./scripts/install_global_ai_harness.sh --both and summarize what was installed and where backups were saved."
 ```
 
+설치 후 확인:
+
+```bash
+codex --ask-for-approval never exec --sandbox danger-full-access "Show ~/.claude/settings.json, list ~/.claude/agents, show ~/.config/opencode/opencode.json, and list ~/.config/opencode/agents and ~/.config/opencode/commands."
+```
+
+설치 후 확인 예시:
+
+```text
+~/.claude/settings.json
+{
+  "agent": "developer",
+  "teammateMode": "in-process"
+}
+
+~/.claude/agents
+- backend-developer.md
+- delivery-lead.md
+- developer.md
+- devils-advocate.md
+- frontend-developer.md
+- planner.md
+- reviewer.md
+- tester.md
+
+~/.config/opencode/opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "developer",
+  "instructions": ["~/.config/opencode/CLAUDE.md"],
+  "agent": {
+    "developer": {
+      "permission": {
+        "task": {
+          "*": "deny",
+          "planner": "allow",
+          "delivery-lead": "allow",
+          "devils-advocate": "allow",
+          "reviewer": "allow",
+          "tester": "allow"
+        }
+      }
+    },
+    "delivery-lead": {
+      "permission": {
+        "task": {
+          "*": "deny",
+          "planner": "allow",
+          "frontend-developer": "allow",
+          "backend-developer": "allow",
+          "devils-advocate": "allow",
+          "reviewer": "allow",
+          "tester": "allow"
+        }
+      }
+    }
+  }
+}
+
+~/.config/opencode/agents
+- backend-developer.md
+- delivery-lead.md
+- developer.md
+- devils-advocate.md
+- frontend-developer.md
+- planner.md
+- reviewer.md
+- tester.md
+
+~/.config/opencode/commands
+- delivery.md
+- review.md
+- test.md
+```
+
+이 예시처럼 나오면 전역 설치가 정상적으로 완료된 것이다.
+
 ### 2) 프로젝트 로컬 생성
 `generate_project_harness.sh`
 
