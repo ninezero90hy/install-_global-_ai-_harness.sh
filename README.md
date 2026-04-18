@@ -84,6 +84,7 @@ templates/
 - Claude Code 전역 설정을 `~/.claude/` 아래에 설치
 - OpenCode 전역 설정을 `~/.config/opencode/` 아래에 설치
 - 기존 설정은 `~/.ai-harness-backups/<timestamp>/`로 백업
+- 기존 OpenCode `plugin` 배열은 보존해서 병합한다. (`oh-my-opencode` 같은 플러그인이 날아가지 않게 함)
 
 지원 옵션:
 - `--claude`
@@ -179,6 +180,15 @@ codex --ask-for-approval never exec --sandbox danger-full-access "Show ~/.claude
 ```
 
 이 예시처럼 나오면 전역 설치가 정상적으로 완료된 것이다.
+
+이때 기존에 `oh-my-opencode` 같은 OpenCode 플러그인을 쓰고 있었다면, 설치 스크립트는 기존 `plugin` 배열을 보존해서 새 설정과 병합한다. 즉 설치 후 `~/.config/opencode/opencode.json`에 아래처럼 남아 있어야 한다.
+
+```json
+"plugin": ["oh-my-opencode"]
+```
+
+플러그인 전용 설정 파일(`~/.config/opencode/oh-my-opencode.json`, `.jsonc`)은 이 스크립트가 건드리지 않는다.
+
 
 ### 2) 프로젝트 로컬 생성
 `generate_project_harness.sh`

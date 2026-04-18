@@ -624,6 +624,36 @@ Diff stat:
 MD
 )
 
+merge_opencode_config() {
+  local target_path="$1"
+  local new_json="$2"
+  python3 - "$target_path" "$new_json" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1]).expanduser()
+new_cfg = json.loads(sys.argv[2])
+plugins = []
+if path.exists():
+    try:
+        existing = json.loads(path.read_text())
+    except Exception:
+        existing = {}
+    existing_plugins = existing.get("plugin", [])
+    if isinstance(existing_plugins, list):
+        plugins.extend(existing_plugins)
+for item in new_cfg.get("plugin", []):
+    if item not in plugins:
+        plugins.append(item)
+if plugins:
+    new_cfg["plugin"] = plugins
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps(new_cfg, indent=2) + "\n")
+PY
+}
+
+
 if [[ "$TARGET" == "claude" || "$TARGET" == "both" ]]; then
   backup_if_exists "$HOME/.claude/settings.json"
   backup_if_exists "$HOME/.claude/CLAUDE.md"
@@ -648,7 +678,7 @@ if [[ "$TARGET" == "opencode" || "$TARGET" == "both" ]]; then
   backup_if_exists "$HOME/.config/opencode/agents"
   backup_if_exists "$HOME/.config/opencode/commands"
 
-  write_file "$HOME/.config/opencode/opencode.json" <<< "$OPENCODE_CONFIG"
+  merge_opencode_config "$HOME/.config/opencode/opencode.json" "$OPENCODE_CONFIG"
   write_file "$HOME/.config/opencode/AGENTS.md" <<< "$GLOBAL_RULES"
   write_file "$HOME/.config/opencode/CLAUDE.md" <<< "$GLOBAL_RULES"
   write_file "$HOME/.config/opencode/agents/planner.md" <<< "$OPENCODE_PLANNER"
@@ -670,5 +700,5 @@ if [[ "$TARGET" == "claude" || "$TARGET" == "both" ]]; then
   echo "Claude Code: ~/.claude/settings.json, ~/.claude/CLAUDE.md, ~/.claude/agents/*"
 fi
 if [[ "$TARGET" == "opencode" || "$TARGET" == "both" ]]; then
-  echo "OpenCode: ~/.config/opencode/opencode.json, AGENTS.md, CLAUDE.md, agents/*, commands/*"
+  echo "OpenCode: ~/.config/opencode/opencode.json, AGENTS.md, CLAUDE.md, agents/*, commands/* (existing plugin array preserved)"
 fi
