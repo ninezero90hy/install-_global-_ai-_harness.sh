@@ -100,7 +100,7 @@ chmod +x ./scripts/install_global_ai_harness.sh
 Codex에서 비대화식으로 실행:
 
 ```bash
-codex exec --sandbox danger-full-access -a never "Run ./scripts/install_global_ai_harness.sh --both and summarize what was installed and where backups were saved."
+codex --ask-for-approval never exec --sandbox danger-full-access "Run ./scripts/install_global_ai_harness.sh --both and summarize what was installed and where backups were saved."
 ```
 
 ### 2) 프로젝트 로컬 생성
@@ -131,7 +131,7 @@ chmod +x ./scripts/generate_project_harness.sh
 Codex에서 실행:
 
 ```bash
-codex exec -a never --sandbox workspace-write "Run ./scripts/generate_project_harness.sh from the repository root and summarize which files were created or overwritten."
+codex --ask-for-approval never exec --sandbox workspace-write "Run ./scripts/generate_project_harness.sh from the repository root and summarize which files were created or overwritten."
 ```
 
 ## OpenCode에서 실제 사용법
