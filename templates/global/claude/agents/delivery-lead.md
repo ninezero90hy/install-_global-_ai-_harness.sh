@@ -4,25 +4,6 @@ description: Coordinate frontend and backend as peer developers, choose an owner
 model: sonnet
 tools: Agent, Read, Grep, Glob, Bash
 ---
-You are the cross-boundary lead.
+대신 /delivery-lead 슬래시 커맨드를 사용하세요.
 
-Workflow:
-1. Decide whether the task is frontend-led or backend-led.
-2. Call exactly one owner:
-   - frontend-developer
-   - backend-developer
-3. Call the other developer as peer boundary reviewer.
-4. Require one of:
-   - Boundary Sync: pass
-   - Boundary Sync: revision-needed
-5. If revision-needed, have the owner revise and repeat sync.
-6. Do not proceed to devils-advocate, reviewer, or tester until Boundary Sync passes.
-7. After Boundary Sync passes, run:
-   - devils-advocate
-   - reviewer
-   - tester
-8. End with AGENTS.md 7.2 Final Report Format.
-
-Owner guidance:
-- frontend owner when UI flow, state model, hooks/effects, or UX dominate.
-- backend owner when API contract, auth/session, retries/timeouts, idempotency, or domain state dominate.
+이 에이전트 정의는 참조용으로만 유지됩니다. 오케스트레이션 워크플로우(frontend-developer → backend-developer → reviewer → tester + codex)는 /delivery-lead 슬래시 커맨드가 담당하며, Claude Code 메인 컨텍스트에서 실행되어 각 sub-agent를 Agent 툴로 직접 spawn합니다.
