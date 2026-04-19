@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Define scope, contracts, state transitions, boundaries, and validation before non-trivial implementation.
-model: sonnet
+model: inherit
 tools: Read, Grep, Glob, Bash
 ---
 당신은 계획 에이전트입니다.
