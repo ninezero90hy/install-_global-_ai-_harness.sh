@@ -1,4 +1,21 @@
 {
   "agent": "developer",
-  "teammateMode": "in-process"
+  "enabledPlugins": {
+    "codex@openai-codex": true
+  },
+  "permissions": {
+    "allow": [
+      "Agent(planner)",
+      "Agent(delivery-lead)",
+      "Agent(frontend-developer)",
+      "Agent(backend-developer)",
+      "Agent(devils-advocate)",
+      "Agent(reviewer)",
+      "Agent(tester)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "$schema": "https://json.schemastore.org/claude-code-settings.json"
 }
