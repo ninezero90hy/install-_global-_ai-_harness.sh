@@ -1,323 +1,188 @@
-# AI Harness Kit
+# Global AI Harness
 
-FP/OOP 혼합 설계 철학과 엄격한 리뷰/검증 흐름을 전제로, **Claude Code**와 **OpenCode**에서 공통적으로 사용할 수 있는 하네스 모음입니다.
+Claude Code 전역 에이전트 하네스. 프롬프트 기교가 아니라 **역할 분리 · 경계 · 오케스트레이션 규율**로 반복 품질을 만든다.
 
-## 목적
+## 설치 대상
 
-이 레포는 아래를 한 번에 제공합니다.
+- `~/.claude/agents/*.md` — 에이전트 정의 (flat 복사)
+- `~/.claude/CLAUDE.md` — 전역 엔지니어링 원칙
 
-- 전역 설치 스크립트
-- 프로젝트 로컬 하네스 생성 스크립트
-- Claude Code용 에이전트 파일
-- OpenCode용 에이전트 파일
-- OpenCode 커맨드 파일
-- 프로젝트용 `AGENTS.md`, `CLAUDE.md`, `src/AGENTS.md` 템플릿
+## 폴더 구조
 
-## 핵심 구조
-
-### 기본 경로
-- `developer`
-- 필요 시 `planner`
-- 위험한 변경이면 `devils-advocate`
-- 최종 게이트는 `reviewer`
-- 검증은 `tester`
-
-### 경계 작업 경로
-frontend와 backend를 함께 수정하거나 API 계약, auth/session, retry/timeout/cancellation, storage, race condition이 걸리면 `delivery-lead` 경로를 사용합니다.
-
-흐름:
-
-1. `delivery-lead`가 owner를 정함
-   - `Owner: frontend`
-   - `Owner: backend`
-2. owner가 초안/구현 주도
-3. 다른 쪽 개발자가 peer boundary review
-4. `Boundary Sync: pass`가 되면
-5. `devils-advocate -> reviewer -> tester`
-
-## 파일 구조
-
-```text
-scripts/
-  install_global_ai_harness.sh
-  generate_project_harness.sh
-
-templates/
-  project/
-    AGENTS.md
-    CLAUDE.md
-    opencode.json
-    src/AGENTS.md
-    .claude/
-      settings.local.json
-      agents/
-        planner.md
-        developer.md
-        delivery-lead.md
-        frontend-developer.md
-        backend-developer.md
-        devils-advocate.md
-        reviewer.md
-        tester.md
-    .opencode/
-      agents/
-        planner.md
-        developer.md
-        delivery-lead.md
-        frontend-developer.md
-        backend-developer.md
-        devils-advocate.md
-        reviewer.md
-        tester.md
-      commands/
-        delivery.md
-        review.md
-        test.md
+```
+install-_global-_ai-_harness.sh/
+├── README.md
+├── install.sh
+├── global/
+│   └── CLAUDE.md                  # 전역 엔지니어링 원칙
+└── agents/
+    ├── orchestrator/
+    │   └── developer.md           # 유일한 orchestrator
+    ├── planning/
+    │   ├── planner.md             # 계획 분석
+    │   └── delivery-lead.md       # 경계 분석
+    ├── implementer/
+    │   ├── frontend-developer.md  # UI/상태/훅 owner 또는 peer
+    │   └── backend-developer.md   # API/도메인/스토리지 owner 또는 peer
+    └── quality/
+        ├── devils-advocate.md     # 공격적 가정 검증
+        ├── reviewer.md            # 최종 품질 게이트
+        └── tester.md              # 실행 검증
 ```
 
-## 스크립트 설명
+Claude Code는 `~/.claude/agents/`를 flat 구조로만 읽기 때문에, 설치 스크립트가 하위 폴더를 평탄화해서 복사한다. 저장소 상의 폴더 분리는 **사람이 읽을 때의 역할 분류** 목적이다.
 
-### 1) 전역 설치
-`install_global_ai_harness.sh`
-
-무엇을 하나요?
-- Claude Code 전역 설정을 `~/.claude/` 아래에 설치
-- OpenCode 전역 설정을 `~/.config/opencode/` 아래에 설치
-- 기존 설정은 `~/.ai-harness-backups/<timestamp>/`로 백업
-- 기존 OpenCode `plugin` 배열은 보존해서 병합한다. (`oh-my-opencode` 같은 플러그인이 날아가지 않게 함)
-
-지원 옵션:
-- `--claude`
-- `--opencode`
-- `--both`
-
-예시:
+## 사용법
 
 ```bash
-chmod +x ./scripts/install_global_ai_harness.sh
-./scripts/install_global_ai_harness.sh --both
+# dry-run: 무엇이 복사될지 먼저 확인
+bash install.sh --dry-run
+
+# 실제 설치 (기존 파일은 ~/.claude/backups/harness-<timestamp>/ 로 백업)
+bash install.sh
+
+# 백업 없이 즉시 덮어쓰기
+bash install.sh --force
+
+# 에이전트만 설치하고 CLAUDE.md 는 건너뛰기
+bash install.sh --no-claude-md
+
+# 설치 위치 바꾸기
+CLAUDE_HOME=/tmp/claude-test bash install.sh --dry-run
 ```
 
-Codex에서 비대화식으로 실행:
+---
 
-```bash
-codex --ask-for-approval never exec --sandbox danger-full-access "Run ./scripts/install_global_ai_harness.sh --both and summarize what was installed and where backups were saved."
+## 에이전트 성격 요약
+
+각 에이전트는 **leaf** (다른 에이전트를 호출하지 않음) 또는 **orchestrator** (유일하게 호출 권한을 가짐) 로 엄격히 나뉜다.
+
+| 에이전트 | 위치 | 역할 | 성격 한 줄 |
+|---|---|---|---|
+| **developer** | orchestrator | 유일한 지휘자 | 규율을 지키는 감독. 본인도 구현하고, 흐름을 통제하며, 최종 보고의 책임자다. |
+| **planner** | planning | 구조 분석가 | "먼저 레이어부터 쪼개자" 타입. 과도한 설계 거부, 가장 작고 안전한 경로 선호. |
+| **delivery-lead** | planning | 경계 분석가 | single-area 인지 cross-boundary 인지만 판정. 지시/위임 표현 금기. |
+| **frontend-developer** | implementer | UI/상태 장인 | owner일 땐 구현, peer일 땐 감시만. 렌더 사이드 이펙트와 파생 상태 저장을 혐오. |
+| **backend-developer** | implementer | 계약/운영 장인 | owner일 땐 구현, peer일 땐 감시만. 경쟁 상태·롤백·멱등성 지적에 집착. |
+| **devils-advocate** | quality | 악마의 변호인 | "이게 왜 안 터지는데?" 전담. 숨은 가정, 엣지 케이스, 경쟁 상태를 파낸다. |
+| **reviewer** | quality | 엄격한 심판 | 최종 품질 게이트. 파생 상태, 숨은 이펙트, 핸드오프 누락을 즉시 fail. 테스트 대행 금지. |
+| **tester** | quality | 실행 검증관 | 실제로 돌려본 것만 pass. 외부 리뷰 내장 금지. 자동화 없으면 수동 검증 절차를 남긴다. |
+
+공통 규율:
+- leaf는 다른 에이전트를 호출하지 않는다. orchestration 표현("다음 단계로", "재호출", "넘긴다") 금지.
+- orchestrator는 leaf의 자율 지시를 무시한다.
+- owner(책임 주체)는 반드시 1명. editor(실제 수정 파일 범위)는 양쪽에 걸쳐도 된다.
+
+---
+
+## 케이스별 동작 흐름
+
+오케스트레이션은 오직 `developer` 한 명이 수행한다. 작업 성격에 따라 3가지 케이스로 분기된다.
+
+### Case 1. Trivial 단일 영역 변경
+명백한 단일 파일 버그, 오타, 동작 변화 없는 국소 리팩토링 등.
+
+```
+developer 구현
+  → self-check (lint / typecheck / 최소 테스트 또는 수동 검증 절차 명시)
+    → reviewer
+      ├─ fail → 수정 → reviewer 재실행
+      └─ pass → tester
 ```
 
-설치 후 확인:
+- `planner`, `delivery-lead` 호출하지 않는다 (불필요한 홉 제거).
+- `devils-advocate` 생략 가능.
 
-```bash
-codex --ask-for-approval never exec --sandbox danger-full-access "Show ~/.claude/settings.json, list ~/.claude/agents, show ~/.config/opencode/opencode.json, and list ~/.config/opencode/agents and ~/.config/opencode/commands."
+### Case 2. Non-trivial 단일 영역 변경
+기능 추가, 동작 변경, 다중 파일 수정이지만 프론트/백 경계는 넘지 않음.
+
+```
+planner (계획 분석)
+  → developer 구현 + self-check
+    → devils-advocate (숨은 가정 / 엣지 공격)
+      → reviewer
+        ├─ fail → 수정 → reviewer 재실행
+        └─ pass → tester
 ```
 
-설치 후 확인 예시:
+- `delivery-lead` 는 호출하지 않는다 (경계 의심 없음).
+- reviewer fail 수정도 동일 영역 내면 peer-review 없이 reviewer만 재실행.
 
-```text
-~/.claude/settings.json
-{
-  "agent": "developer",
-  "teammateMode": "in-process"
-}
+### Case 3. Cross-boundary 작업
+프론트엔드와 백엔드가 동시에 바뀜. API/계약/인증/스토리지에 영향.
 
-~/.claude/agents
-- backend-developer.md
-- delivery-lead.md
-- developer.md
-- devils-advocate.md
-- frontend-developer.md
-- planner.md
-- reviewer.md
-- tester.md
-
-~/.config/opencode/opencode.json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "default_agent": "developer",
-  "instructions": ["~/.config/opencode/CLAUDE.md"],
-  "agent": {
-    "developer": {
-      "permission": {
-        "task": {
-          "*": "deny",
-          "planner": "allow",
-          "delivery-lead": "allow",
-          "devils-advocate": "allow",
-          "reviewer": "allow",
-          "tester": "allow"
-        }
-      }
-    },
-    "delivery-lead": {
-      "permission": {
-        "task": {
-          "*": "deny",
-          "planner": "allow",
-          "frontend-developer": "allow",
-          "backend-developer": "allow",
-          "devils-advocate": "allow",
-          "reviewer": "allow",
-          "tester": "allow"
-        }
-      }
-    }
-  }
-}
-
-~/.config/opencode/agents
-- backend-developer.md
-- delivery-lead.md
-- developer.md
-- devils-advocate.md
-- frontend-developer.md
-- planner.md
-- reviewer.md
-- tester.md
-
-~/.config/opencode/commands
-- delivery.md
-- review.md
-- test.md
+```
+planner
+  → delivery-lead (single-area/boundary 판정 + 추천 owner + 계약)
+    → 추천 owner 호출 (frontend-developer 또는 backend-developer, Role: owner) — 구현
+      → 반대편 agent 호출 (Role: peer-review) — 계약 검토
+        → Boundary Sync
+          ├─ revision-needed → owner 재호출 → peer-review 재호출 (pass까지 반복)
+          └─ pass → devils-advocate
+                     → reviewer
+                       ├─ fail (boundary 영향) → owner 재호출 → peer-review → Boundary Sync → reviewer 재실행
+                       ├─ fail (boundary 무관) → 수정 → reviewer 재실행
+                       └─ pass → tester
 ```
 
-이 예시처럼 나오면 전역 설치가 정상적으로 완료된 것이다.
+규칙:
+- `delivery-lead` 는 **분석만** 한다. 구현/위임/재실행 지시는 무시한다.
+- Boundary Sync: pass 전에는 절대 reviewer 로 진행하지 않는다.
+- owner 는 1명, editor 는 양쪽 파일에 걸칠 수 있다 — 두 개념 혼동 금지.
 
-이때 기존에 `oh-my-opencode` 같은 OpenCode 플러그인을 쓰고 있었다면, 설치 스크립트는 기존 `plugin` 배열을 보존해서 새 설정과 병합한다. 즉 설치 후 `~/.config/opencode/opencode.json`에 아래처럼 남아 있어야 한다.
+---
 
-```json
-"plugin": ["oh-my-opencode"]
-```
+## reviewer fail 처리 규칙
 
-플러그인 전용 설정 파일(`~/.config/opencode/oh-my-opencode.json`, `.jsonc`)은 이 스크립트가 건드리지 않는다.
+| 수정 성격 | 재실행 경로 |
+|---|---|
+| boundary 계약에 영향 있음 | owner 수정 → peer-review → Boundary Sync pass → reviewer 재실행 |
+| boundary 무관 | 수정 → reviewer 재실행 |
+| reviewer pass 이후 | tester 시작 |
 
+## 외부 리뷰 (Codex 등) 처리
 
-### 2) 프로젝트 로컬 생성
-`generate_project_harness.sh`
+- `tester` / `reviewer` 안에 **내장하지 않는다**.
+- 필요하면 `developer` 가 직접 sibling optional step 으로 호출한다.
 
-무엇을 하나요?
-- 현재 디렉터리를 repo 루트라고 가정
-- 로컬 프로젝트용 하네스 파일 생성
-- 기존 파일은 타임스탬프 백업 디렉터리로 이동
+---
 
-생성 대상:
-- `AGENTS.md`
-- `CLAUDE.md`
-- `opencode.json`
-- `src/AGENTS.md`
-- `.claude/agents/*`
-- `.claude/settings.local.json`
-- `.opencode/agents/*`
-- `.opencode/commands/*`
+## 전역 엔지니어링 원칙 (`global/CLAUDE.md` 요약)
 
-예시:
+**사고 순서** — 입력 정규화 → 순수 변환 → 상태 전이 → 이펙트 실행.
 
-```bash
-chmod +x ./scripts/generate_project_harness.sh
-./scripts/generate_project_harness.sh
-```
+**핵심 원칙**
+- 계산/검증/정규화/매핑/필터링/집계는 순수 함수 선호
+- 사이드 이펙트는 경계에서 격리
+- 불변성 기본
+- 파생 상태 저장 금지
+- 숨은 전역 상태와 암묵적 의존성 금지
+- 명시적 상태 전이 선호
+- 상속보다 조합
+- 작고 되돌릴 수 있는 diff
 
-Codex에서 실행:
+**React**
+- 상태 단일 출처
+- 훅 의존성 완전
+- 렌더링 · 변환 · 이펙트 분리
+- network / storage / timer / browser API 는 경계 뒤에
+- 장시간 이펙트는 cleanup, 필요 시 요청 취소
+- 섣부른 memoization 금지
 
-```bash
-codex --ask-for-approval never exec --sandbox workspace-write "Run ./scripts/generate_project_harness.sh from the repository root and summarize which files were created or overwritten."
-```
+**Cross-boundary**
+- owner 1명 지정
+- 반대편은 peer boundary review
+- Boundary Sync pass 전에 최종 리뷰 진입 금지
 
-## OpenCode에서 실제 사용법
+---
 
-기본 에이전트는 `developer`입니다.
+## 최종 보고 필수 항목
 
-### 단일 영역 작업
-그냥 요청합니다.
+orchestrator(`developer`)의 최종 보고에는 아래 6개 항목이 반드시 존재해야 한다. 누락 시 reviewer 가 fail 처리한다.
 
-```text
-로그인 버튼 스타일 수정
-```
-
-### 경계 작업
-OpenCode 커맨드를 사용합니다.
-
-```text
-/delivery 로그인 기능 개발
-```
-
-owner를 명시하고 싶으면:
-
-```text
-/delivery 이번 작업은 backend-led로 진행해.
-Owner: backend
-frontend-developer는 peer boundary review를 수행해.
-Boundary Sync: pass 전에는 다음 게이트로 넘기지 마.
-```
-
-리뷰만 다시 돌릴 때:
-
-```text
-/review 인증 흐름 변경 점검
-```
-
-검증만 다시 돌릴 때:
-
-```text
-/test 로그인 변경 검증
-```
-
-## Claude Code에서 실제 사용법
-
-기본 에이전트는 `developer`입니다.
-
-### 단일 영역 작업
-```bash
-claude "로그인 버튼 스타일 수정"
-```
-
-### 경계 작업
-```bash
-claude --agent delivery-lead --teammate-mode in-process "로그인 기능 개발"
-```
-
-## 에이전트 설명
-
-### planner
-비사소한 작업에서 범위, 계약, 상태 전이, 검증 계획을 먼저 구조화합니다.
-
-### developer
-기본 구현 에이전트입니다. 단일 영역 작업을 처리합니다.
-
-### delivery-lead
-frontend와 backend를 동등한 peer developer로 조율합니다. 작업마다 owner를 정하고 `Boundary Sync`를 통과시킨 뒤 공통 게이트로 넘깁니다.
-
-### frontend-developer
-프론트엔드 구현자이자 peer boundary reviewer입니다. owner가 될 수도 있고, backend 작업에 대해 UX/state/effect 관점 피드백을 줄 수도 있습니다.
-
-### backend-developer
-백엔드 구현자이자 peer boundary reviewer입니다. owner가 될 수도 있고, frontend 작업에 대해 API/auth/error/state 관점 피드백을 줄 수도 있습니다.
-
-### devils-advocate
-숨은 가정, 반례, race condition, rollback, failure mode를 공격적으로 찾습니다.
-
-### reviewer
-엄격한 최종 품질 게이트입니다. 코드 품질뿐 아니라 handoff/report 누락도 fail로 처리할 수 있습니다.
-
-### tester
-검증 담당입니다. AGENTS.md 7.2 형식으로 검증 근거를 남깁니다.
-
-## 중요한 주의점
-
-- 이 하네스는 **작은 안전한 변경**을 기본값으로 둡니다.
-- `reviewer` pass 전에는 `tester`를 돌리지 않습니다.
-- 경계 작업은 `Boundary Sync: pass` 전에는 공통 게이트로 넘기지 않습니다.
-- OpenCode에서는 `delivery-lead`가 오케스트레이션하고, `frontend-developer`/`backend-developer`는 peer developer로 동작합니다.
-- Claude Code와 OpenCode는 파일 위치와 설정 방식이 다르므로, 템플릿과 스크립트는 그 차이를 반영합니다.
-
-## 권장 레포 운영 방식
-
-- 이 레포는 **배포용 하네스 저장소**로 둡니다.
-- 실제 프로젝트에는 `generate_project_harness.sh`로 로컬 파일을 뿌립니다.
-- 개인 환경에는 `install_global_ai_harness.sh`로 전역 설정을 깝니다.
-- 변경 이력은 이 레포에서 관리합니다.
-
-## 다음 추천 작업
-
-- `/boundary-sync` 전용 OpenCode 커맨드 추가
-- repo별 명령(`npm`, `pnpm`, `bun`) 선택형 생성 옵션 추가
-- reviewer fail 기준을 도메인별로 세분화
-- backend 전용 상세 규칙 파일 추가
+- Summary
+- Scope
+- Changed Files
+- Validation
+- Risks
+- Next Step
